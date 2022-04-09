@@ -1,5 +1,5 @@
 # Light_Pollution_and_Shearwater_nest_attendance
-Repository containing script and data for the studying the effects of light pollution from industrial ships on shearwater nest attendance.
+Repository containing script and data for the studying the effects of light pollution from industrial ships on adult shearwater nest attendance.
 
 A study on how the light pollution from ships anchoring in front of a shearwater colony affects nest attendance. The study and script covers all steps of data cleaning and analysis which lead to final results. It combines three data sources: 
 Shearwater registrations at a cavernous colony entrance using a Radio Frequency Identification (RFID) system 
