@@ -885,17 +885,6 @@ MOVESIN <- MIOper %>%
   filter(direction=="IN") %>% #errors have already been filtered out
   mutate(count=1) 
 
-SQMSS$birdsentering <- 0 
-for (n in 2:length(SQMSS$DateTime)){
-  x<-SQMSS$DateTime[n]-minutes(10)
-  x1<-SQMSS$DateTime[n]
-  sqmint<-interval(x,x1)
-  birdsthisinterval<- MOVESIN$DateTime %within% sqmint
-  SQMSS$birdsentering[n]<- sum(birdsthisinterval, na.rm=T)
-  
-}
-
-
 SQMSS$bunker<-ifelse(SQMSS$ships>0,1,0)
 
 SQMSSQ3 <- SQMSS #to use later for Q3
