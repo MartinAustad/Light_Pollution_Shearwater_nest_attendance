@@ -1174,6 +1174,7 @@ testZeroInflation(simulationOutput)
 
 
 #predict % change from neg. bin. model
+Mcc$bunker <- as.factor(Mcc$bunker)
 newdata1 <- expand.grid(bunker=levels(Mcc$bunker), HRordered=levels(Mcc$HRordered), MONTH=levels(Mcc$MONTH), moon.light = seq(from= -1, to=1.9, by=0.1))                            
 newdataA<- predict(Q3m_nb, newdata1, type = "response", se.fit=T)
 newdat <- data.frame(newdata1, newdataA)
