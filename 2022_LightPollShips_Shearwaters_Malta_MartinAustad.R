@@ -365,24 +365,6 @@ RFIDAMPS <-  RFIDMETA %>%
 
 opernights_detectionnights <- merge(opernights_detectionnights, RFIDAMPS, by = "NightStarting", all.x=TRUE, all.y = TRUE)
 
-###IS VOLTAGE/AMPERAGE CORRELATED WITH MARKER TAG DETECTIONS?? 
-
-opernights_detectionnights$minvoltage <- str_sub(opernights_detectionnights$minvoltage, end=-2) #removes V
-opernights_detectionnights$minvoltage <- as.numeric(opernights_detectionnights$minvoltage)
-
-OP1719 <- opernights_detectionnights %>%
-  mutate(Year= year(NightStarting))%>%
-  filter(Year!=2020)
-
-tail(OP1719)
-
-plot(OP1719$minvoltage, OP1719$A1_marker)
-plot(OP1719$minvoltage, OP1719$A2_marker)
-plot(OP1719$NightStarting, OP1719$minvoltage)
-
-#No indication that voltage decreases during season 
-
-
 #############################################################################
 ##############filter out nights when RFID was not working properly...########
 #############################################################################
