@@ -815,10 +815,6 @@ for(i in nrow(MIOr):2){   #####the move on the next night should not be used
   }
 }
 
-MIOper <- MIOr %>%
-  filter(error!=1)%>%
-  filter(DateTime %within% mopernights)
-
 MIOperall <- MIOr %>%
   filter(DateTime %within% mopernights)
 
@@ -880,9 +876,10 @@ for (n in 2:length(SQMSS$DateTime)){
   SQMSS$ships[n]<- sum(shipsthisinterval, na.rm=T)
 }
 
-MOVESIN <- MIOper %>% 
+MOVESIN <- MIOperall %>% 
   filter(firstmove==1) %>%
-  filter(direction=="IN") %>% #errors have already been filtered out
+  filter(direction=="IN") %>% 
+  filter(error!=1)%>%
   mutate(count=1) 
 
 SQMSS$bunker<-ifelse(SQMSS$ships>0,1,0)
