@@ -1282,14 +1282,15 @@ plot(simulationOutput)
 ############combine all data into one graph#################################################
 ##############################################################################################
 
-Moves_Night <- MIOper %>%
+Moves_Night <- MIOperall %>%
   filter(firstmove==1) %>%
    filter(direction=="IN")  %>%
-    group_by(NightStarting) %>%
-    summarise(activity=length(unique(TagID)))%>%
-    mutate(n_deployed=sapply(NightStarting,taggedby)) %>%
-    mutate(prop_moving=(activity/n_deployed)*100)  %>%
-    arrange(NightStarting)
+   filter(error!=1)%>%
+   group_by(NightStarting) %>%
+   summarise(activity=length(unique(TagID)))%>%
+   mutate(n_deployed=sapply(NightStarting,taggedby)) %>%
+   mutate(prop_moving=(activity/n_deployed)*100)  %>%
+   arrange(NightStarting)
 
 
 ACTSQM <- merge(SQM, Moves_Night, by = "NightStarting", all.x=TRUE, all.y=TRUE)
