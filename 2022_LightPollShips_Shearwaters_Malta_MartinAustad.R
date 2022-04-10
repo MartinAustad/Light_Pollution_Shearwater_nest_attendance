@@ -1066,7 +1066,7 @@ selection<-selection[selection>0]
 
 CaseControl<-monitornightsper%>%
   filter(row_number() %in% selection)%>%
-  filter(ships!=1)#%>% #remove nights with only one night
+  filter(ships!=1)#%>% #remove nights with only one ship
   #select(NightStarting,sunset,sunrise,ships,nightdur)#%>%
 
 
