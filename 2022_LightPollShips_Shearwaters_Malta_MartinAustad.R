@@ -19,7 +19,6 @@ library(maptools)
 library(sp)
 library(fasttime)
 library(MASS)
-library(mgcv)
 library(pscl)
 library(DHARMa)
 
