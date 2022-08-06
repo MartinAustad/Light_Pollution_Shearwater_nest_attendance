@@ -1179,12 +1179,10 @@ Mcc$NightStarting <- as.factor(Mcc$NightStarting)
 levels(Mcc$HR)
 Mcc$eventID <- as.factor(Mcc$eventID)
 
-#negative binomial glmm #(1|Year) removed to be able to compare to full model with Anova
-Q3m_nb<-glmmTMB(IN_activity~-1+bunker*moon.light+HRordered+MONTH+(1|MONTH)+(1|NightStarting/HRordered)+(1|eventID)+(1|Year), data=Mcc, family=nbinom1)
+Q3m_nb<-glmmTMB(IN_activity~-1+HRordered+MONTH+bunker*moon.light+(1|MONTH)+(1|NightStarting/HRordered)+(1|eventID)+(1|Year), data=Mcc, family=nbinom1)
 outQ3m_nb<-summary(Q3m_nb)
 outQ3m_nb$coefficients
 outQ3m_nb
-
 
 simulationOutput <- simulateResiduals(fittedModel = Q3m_nb, plot = F)
 plot(simulationOutput)
@@ -1234,11 +1232,12 @@ newdat <- data.frame(newdata1, newdataA)
 nw <- newdat %>% group_by(bunker) %>% summarise(mean=mean(fit), mean(se.fit))
 
 ###check if number of ships is sig in model ####
-full3 <-glmmTMB(IN_activity~-1+HRordered+MONTH+ships+bunker*moon.light+(1|eventID)+(1|Year), data=Mcc, family=nbinom1)
+full3 <-glmmTMB(IN_activity~HRordered+MONTH+ships+bunker*moon.light+(1|MONTH)+(1|NightStarting/HRordered)+(1|eventID), data=Mcc, family=nbinom1)  #convergence issue with (1|Year) in this model
 outfull3<-summary(full3)
 outfull3$coefficients
 outfull3
-
+#negative binomial glmm #(1|Year) removed to be able to compare to full model with Anova
+Q3m_nb<-glmmTMB(IN_activity~HRordered+MONTH+bunker*moon.light+(1|MONTH)+(1|NightStarting/HRordered)+(1|eventID), data=Mcc, family=nbinom1)
 anova(Q3m_nb, full3) #number of ships is not significant
 
 
@@ -1295,14 +1294,17 @@ Mcce_medians<-Mcce %>%
   group_by(Monthord,bunker) %>%
   summarise(Medentrance=median(entrance_activity))
 
-#plot number of ind moving in entrance per hour, with and without ships present
+#plot number of ind moving in entrance 
 Mcce %>%
-  ggplot(aes(x=HRordered, y=entrance_activity, width=1))+
-  geom_boxplot(colour="black") +
-  facet_grid(Monthord ~ bunker,scales = "fixed", shrink = TRUE)+
+  ggplot(aes(x=ships, y=entrance_activity, width=1))+
+  geom_point(aes(color=moon.light)) +
+  scale_color_gradient(low="black", high="yellow", limits=c(-1,1.9), breaks=c(-1,-0.5,0,0.5,1,1.5,1.9))+
+  guides(color=guide_legend(title="Moon light"), size = guide_legend(title="N. ships"))+
+  #facet_wrap("Monthord", scales = "fixed", shrink = FALSE, ncol=1)+
   ylab("N individuals moving in the cave entrance") +
-  geom_hline(data=Mcce_medians,aes(yintercept=Medentrance), color='gray66',  linetype="dashed")+
-  scale_x_discrete(name="Hour", labels=c(17,18,19,20,21,22,23,0,1,2,3,4,5))+ 
+  xlab("N ships")+ 
+  #geom_hline(data=Mcce_medians,aes(yintercept=Medentrance), color='gray66',  linetype="dashed")+
+  #scale_x_discrete(name="Hour", labels=c(17,18,19,20,21,22,23,0,1,2,3,4,5))+ 
   theme(panel.background=element_rect(fill="white", colour="black"), 
         axis.text=element_text(size=18, color="black", family="sans"), 
         axis.title=element_text(size=22, family="sans"),
@@ -1314,7 +1316,6 @@ Mcce %>%
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         panel.border = element_blank())
-
 
 Mcce$Year <- as.factor(year(Mcce$NightStarting))
 Mcce$eventID <- as.factor(Mcce$eventID)
