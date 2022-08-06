@@ -1185,11 +1185,27 @@ outQ3m_nb<-summary(Q3m_nb)
 outQ3m_nb$coefficients
 outQ3m_nb
 
+
 simulationOutput <- simulateResiduals(fittedModel = Q3m_nb, plot = F)
 plot(simulationOutput)
 testOutliers(simulationOutput, type="bootstrap")
 testDispersion(simulationOutput)
 testZeroInflation(simulationOutput)
+
+#predict and estimate percentage change caused by ship presence on colony nest attendance
+Mcc$bunker <- as.factor(Mcc$bunker)
+newdata1 <- expand.grid(bunker=levels(Mcc$bunker), HRordered=c(17,18,19, 20, 21, 22, 23, 0, 1, 2, 3,4), NightStarting=levels(Mcc$NightStarting), MONTH=levels(Mcc$MONTH), eventID=levels(Mcc$eventID), moon.light = seq(from= -1, to=2.0, by=0.5), Year=levels(Mcc$Year))                            
+newdata<- predict(Q3m_nb, newdata=newdata1, type= "response", re.form=NULL, allow.new.levels=T)  #removing se.fit=T which needs too much memory 
+newdatc <- data.frame(newdata1, newdata)
+nws <- spread(newdatc, bunker, newdata)
+
+nws <- nws %>%
+  mutate(perchange=((`ships present` - `no ships`)/`no ships`)*100)#calculate % change
+
+mean(nws$perchange)
+sd(nws$perchange)
+
+###in case 'se.fit=T' is kept in predict the simpler model below runs:
 
 Q3m_nbr<-glmmTMB(IN_activity~-1+HRordered+MONTH+bunker*moon.light+(1|eventID)+(1|Year), data=Mcc, family=nbinom1)
 outQ3m_nbr<-summary(Q3m_nbr)
@@ -1202,7 +1218,7 @@ testOutliers(simulationOutput, type="bootstrap")
 testDispersion(simulationOutput)
 testZeroInflation(simulationOutput)
 
-#predict % change from neg. bin. model #with (1|Nightstarting/HRordered) newdata was ~9000000 and didn't run
+#predict % change from neg. bin. model #with (1|Nightstarting/HRordered) newdata was ~9000000 and didn't run with se.fit=T
 #In original model with all random effects; variance was
 #Groups                  Name        Variance  Std.Dev. 
 #MONTH                   (Intercept) 3.148e-14 1.774e-07
