@@ -22,6 +22,8 @@ library(MASS)
 library(DHARMa)
 library(lme4)
 library(glmmTMB)
+filter<-dplyr::filter
+select<-dplyr::select
 
 ################################################################################################################
 ###################### YESH COLONY RFID DATA FROM MALTA   ######################################################
@@ -1171,6 +1173,30 @@ Mcc %>%
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         panel.border = element_blank())
+
+### ALTERNATIVE FIG 4 suggested by Steffen Oppel on 8 Aug 2022
+
+Mcc %>%
+  mutate(moon.light=ifelse(moon.light<0,0,moon.light)) %>%
+  ggplot(aes(x=ships, y=IN_activity, colour=moon.light))+
+  geom_point(position=position_jitter(width=0.35, height=0.35)) +
+  ylab("N individuals entering per hour") +
+  xlab("Number of ships present") +
+  scale_color_gradient(low="black", high="orange", limits=c(0,2), breaks=c(0,0.5,1.0,1.5,2))+
+  guides(color=guide_legend(title="Moon light"))+
+  theme(panel.background=element_rect(fill="white", colour="black"), 
+        axis.text=element_text(size=18, color="black", family="sans"), 
+        axis.title=element_text(size=22, family="sans"),
+        axis.title.y=element_text(margin=margin(0,15,0,0)),
+        axis.title.x=element_text(margin=margin(15,0,0,0)),
+        legend.text=element_text(size=14, color="black"),
+        legend.title=element_text(size=18, color="black"),
+        legend.key=element_blank(),
+        legend.position=c(0.8,0.87),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank())
+
 
 hist(Mcc$IN_activity)
 
