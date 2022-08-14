@@ -1197,6 +1197,34 @@ Mcc %>%
         panel.grid.minor = element_blank(), 
         panel.border = element_blank())
 
+#Follow up to the alternative FIG 4, focussing on ship presence and moon light rather than number of ships 
+
+Mcc <- Mcc%>%
+  mutate(moon=cut(moon.light, breaks=c(-1.1, 0, 1, 2),
+                  labels=c('0', '1', '2')))
+  Mcc %>%
+  #mutate(moon.light=ifelse(moon.light<0,0,moon.light)) %>%
+  ggplot(aes(x=moon, y=IN_activity, colour=bunker))+
+  geom_boxplot(outlier.shape=NA)+
+  geom_point(position=position_jitterdodge(jitter.width=0.35, jitter.height=0.35)) +
+  #facet_grid("bunker",scales = "fixed", shrink = TRUE)+
+  ylab("N individuals entering per hour") +
+  xlab("Moon light") +
+  #scale_color_gradient(low="black", high="orange", limits=c(0,2), breaks=c(0,0.5,1.0,1.5,2))+
+  guides(color=guide_legend(title=""))+
+  theme(panel.background=element_rect(fill="white", colour="black"), 
+        axis.text=element_text(size=18, color="black", family="sans"), 
+        axis.title=element_text(size=22, family="sans"),
+        axis.title.y=element_text(margin=margin(0,15,0,0)),
+        axis.title.x=element_text(margin=margin(15,0,0,0)),
+        legend.text=element_text(size=14, color="black"),
+        legend.title=element_text(size=18, color="black"),
+        legend.key=element_blank(),
+        legend.position=c(0.8,0.87),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank())
+
 
 hist(Mcc$IN_activity)
 
