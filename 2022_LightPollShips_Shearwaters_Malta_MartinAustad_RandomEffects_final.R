@@ -1202,12 +1202,24 @@ Mcc %>%
 Mcc <- Mcc%>%
   mutate(moon=cut(moon.light, breaks=c(-1.1, 0, 1, 2),
                   labels=c('0', '1', '2')))
+  
+  Mcc$Nightper[Mcc$HRordered %in% c(17,18,19,20)] <- "17 to 20hrs"
+  Mcc$Nightper[Mcc$HRordered %in% c(21,22,23,0)] <- "21 to 0hrs"
+  
+  inc1 <-  interval(ymd("2017-02-01", tz="UTC"), ymd("2017-04-25", tz="UTC")) 
+  inc2 <-  interval(ymd("2018-02-01", tz="UTC"), ymd("2018-04-25", tz="UTC"))
+  inc3 <-  interval(ymd("2019-02-01", tz="UTC"), ymd("2019-04-25", tz="UTC"))
+  inc4 <-  interval(ymd("2020-02-01", tz="UTC"), ymd("2020-04-25", tz="UTC"))
+
+  Mcc <- Mcc %>%
+  mutate(breedingper=ifelse(NightStarting %within% inc1 | NightStarting %within% inc2 | NightStarting %within% inc3 | NightStarting %within% inc4, 'Mating & Incubation', 'Chick-rearing'))
+
   Mcc %>%
-  #mutate(moon.light=ifelse(moon.light<0,0,moon.light)) %>%
+  filter(!is.na(Nightper)) %>%
   ggplot(aes(x=moon, y=IN_activity, colour=bunker))+
   geom_boxplot(outlier.shape=NA)+
   geom_point(position=position_jitterdodge(jitter.width=0.35, jitter.height=0.35)) +
-  #facet_grid("bunker",scales = "fixed", shrink = TRUE)+
+  facet_grid(Nightper~breedingper, scales = "fixed", shrink = TRUE, )+
   ylab("N individuals entering per hour") +
   xlab("Moon light") +
   #scale_color_gradient(low="black", high="orange", limits=c(0,2), breaks=c(0,0.5,1.0,1.5,2))+
@@ -1224,6 +1236,7 @@ Mcc <- Mcc%>%
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         panel.border = element_blank())
+
 
 
 hist(Mcc$IN_activity)
