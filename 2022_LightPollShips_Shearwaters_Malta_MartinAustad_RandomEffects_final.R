@@ -1203,8 +1203,8 @@ Mcc <- Mcc%>%
   mutate(moon=cut(moon.light, breaks=c(-1.1, 0, 1, 2),
                   labels=c('0', '1', '2')))
   
-  Mcc$Nightper[Mcc$HRordered %in% c(17,18,19,20)] <- "17 to 20hrs"
-  Mcc$Nightper[Mcc$HRordered %in% c(21,22,23,0)] <- "21 to 0hrs"
+    Mcc$Nightper[Mcc$HRordered %in% c(18,19,20)] <- "18 to 20hrs"
+  Mcc$Nightper[Mcc$HRordered %in% c(21,22,23)] <- "21 to 23hrs"
   
   inc1 <-  interval(ymd("2017-02-01", tz="UTC"), ymd("2017-04-25", tz="UTC")) 
   inc2 <-  interval(ymd("2018-02-01", tz="UTC"), ymd("2018-04-25", tz="UTC"))
@@ -1232,7 +1232,7 @@ Mcc <- Mcc%>%
         legend.text=element_text(size=14, color="black"),
         legend.title=element_text(size=18, color="black"),
         legend.key=element_blank(),
-        legend.position=c(0.8,0.87),
+        #legend.position=c(0.8,0.87),
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         panel.border = element_blank())
