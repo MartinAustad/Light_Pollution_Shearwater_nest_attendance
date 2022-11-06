@@ -638,25 +638,51 @@ length(unique(monitornightsper_summary$NightStarting))
 monitornightsper_summary <- monitornightsper_summary %>% 
   mutate(shipsN = ifelse(ships>1, 'Bunkering events', 'One ship for entire night duration'))
 
-monitornightsper_summary%>%
-  ggplot(aes(x=NightStarting, y=ships, width=1, fill= shipsN))+
+#include nights without any ships in the complete study period so that x-axis is comparable to other graphs presented
+
+p17 <- seq(ymd("2017-03-23", tz="UTC"), ymd("2017-06-30", tz="UTC"), by='1 day')
+p18 <- seq(ymd("2018-03-01", tz="UTC"), ymd("2018-06-30", tz="UTC"), by='1 day')
+p19 <- seq(ymd("2019-02-01", tz="UTC"), ymd("2019-06-30", tz="UTC"), by='1 day')
+p20 <- seq(ymd("2020-02-01", tz="UTC"), ymd("2020-06-30", tz="UTC"), by='1 day')
+
+p <- as.data.frame(c(p17, p18,p19,p20))
+colnames(p)[1] <- 'NightStarting'  
+p$NightStarting <- as.Date(p$NightStarting)
+
+monitornightsper_summary <- merge(p, monitornightsper_summary,by=('NightStarting'), all.x=T)
+monitornightsper_summary$ships[is.na(monitornightsper_summary$ships)]<-0
+monitornightsper_summary$shipsN[is.na(monitornightsper_summary$shipsN)]<-"No ships"
+
+monitornightsper_summary<-monitornightsper_summary %>% 
+  mutate(year=year(NightStarting))%>%
+  dplyr::select(NightStarting, ships, shipsN, year)
+
+monitornightsper_summary$shipsN <- factor(monitornightsper_summary$shipsN, levels=c("Bunkering events", "One ship for entire night duration", "No ships"))
+
+  ggplot(monitornightsper_summary, aes(x=NightStarting, y=ships, width=1, fill= shipsN))+ 
+  facet_wrap('year', scales="free_x")+ #use same scales on y-axis
   geom_col()+
-  facet_wrap('Year', scales="free")+
-  ylab("Number of ships stationary in front of shearwater colony") +
-  scale_x_date(name="Night Starting Date", labels=date_format("%m-%d"), breaks=date_breaks(width = "1 week"))+ 
+  scale_fill_manual(values = c("#F8766D", "#00BFC4", "white"),
+                      labels = c("Bunkering events", "One ship for entire night duration", "No ships"), 
+                      drop = TRUE)+
+  ylab("N ships stationary in front of shearwater colony per night") +
+  xlab("Date")+
+  scale_y_continuous(breaks=seq(0,20,2), labels=seq(0,20,2))+
   theme(panel.background=element_rect(fill="white", colour="black"), 
-        axis.text.y = element_text(size=12, color="black"), 
-        axis.text.x = element_text(size=12, color="black", angle = 90, vjust = 0.5),
-        axis.title=element_text(size=14),
+        axis.text.y = element_text(size=14, color="black", family="sans"), 
+        axis.text.x = element_text(size=18, color="black", family="sans"),
+        axis.title=element_text(size=22, family="sans"),
         axis.title.y=element_text(margin=margin(0,15,0,0)),
         axis.title.x=element_text(margin=margin(15,0,0,0)), 
-        strip.text.x=element_text(size=12, color="black"),
-        strip.text.y=element_text(size=12, color="black"),
+        strip.text.x=element_text(size=18, color="black"),
+        strip.text.y=element_text(size=14, color="black"),
         strip.background=element_rect(fill="white", colour="black"),
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         panel.border = element_blank(),
-        legend.title = element_blank())
+        legend.title = element_blank(),
+        legend.text = element_text(size=16),
+        legend.position = "bottom")
 
 ################################################################################################################
 ###### LOAD AND MANIPULATE LIGHT METER DATA   ##############################
@@ -1418,7 +1444,7 @@ Moves_Night <- MIOperall %>%
     mutate(prop_moving=(activity/n_deployed)*100)  %>%
     arrange(NightStarting)
 
-
+SQM$NightStarting <- as.Date(SQM$NightStarting, format="%Y-%m-%d")
 ACTSQM <- merge(SQM, Moves_Night, by = "NightStarting", all.x=TRUE, all.y=TRUE)
 
 ACTSQMna <- ACTSQM %>% 
@@ -1557,7 +1583,171 @@ ACTSQM <- rbind(ACTSQM, ACTSQMna)
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         panel.border = element_blank())
-    
+
+###Focus on a selected period to show effect of bunkering better ####
+      
+g1 <- interval(ymd("2017-04-01", tz="UTC"), ymd("2017-04-30", tz="UTC"))   
+
+g <- ACTSQM %>%
+  filter(NightStarting %within% g1)
+
+g %>%
+  #filter((NightStarting %within% per17x) | (NightStarting %within% per18) | (NightStarting %within% per19) | (NightStarting %within% per20x))%>%
+  ggplot(aes(x=NightStarting, y=candelaperm2))+geom_point(colour="gray", size=3.5, alpha=0.5, na.rm=TRUE) +
+  facet_wrap('year', scales="free_x")+
+  geom_line(aes(y=a+activity*b), size=0.8, colour="black", na.rm=TRUE)+
+  geom_vline(aes(xintercept=shipnights$NightStarting[1]), color='red',  linetype="dashed", size=shipnights$ships[1]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[2]), color='red',  linetype="dashed", size=shipnights$ships[2]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[3]), color='gray66',  linetype="dotdash", size=shipnights$ships[3]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[4]), color='red',  linetype="dashed", size=shipnights$ships[4]/50) + 
+  geom_vline(aes(xintercept=shipnights$NightStarting[5]), color='red',  linetype="dashed", size=shipnights$ships[5]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[6]), color='red',  linetype="dashed", size=shipnights$ships[6]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[7]), color='red',  linetype="dashed", size=shipnights$ships[7]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[8]), color='red',  linetype="dashed", size=shipnights$ships[8]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[9]), color='red',  linetype="dashed", size=shipnights$ships[9]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[10]), color='red',  linetype="dashed", size=shipnights$ships[10]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[11]), color='red',  linetype="dashed", size=shipnights$ships[11]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[12]), color='red',  linetype="dashed", size=shipnights$ships[12]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[13]), color='red',  linetype="dashed", size=shipnights$ships[13]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[14]), color='gray66',  linetype="dotdash", size=shipnights$ships[14]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[15]), color='gray66',  linetype="dotdash", size=shipnights$ships[15]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[16]), color='gray66',  linetype="dotdash", size=shipnights$ships[16]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[17]), color='gray66',  linetype="dotdash", size=shipnights$ships[17]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[18]), color='red',  linetype="dashed", size=shipnights$ships[18]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[19]), color='red',  linetype="dashed", size=shipnights$ships[19]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[20]), color='red',  linetype="dashed", size=shipnights$ships[20]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[21]), color='red',  linetype="dashed", size=shipnights$ships[21]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[22]), color='red',  linetype="dashed", size=shipnights$ships[22]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[23]), color='red',  linetype="dashed", size=shipnights$ships[23]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[24]), color='gray66',  linetype="dotdash", size=shipnights$ships[24]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[25]), color='gray66',  linetype="dotdash", size=shipnights$ships[25]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[26]), color='red',  linetype="dashed", size=shipnights$ships[26]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[27]), color='red',  linetype="dashed", size=shipnights$ships[27]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[28]), color='red',  linetype="dashed", size=shipnights$ships[28]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[29]), color='red',  linetype="dashed", size=shipnights$ships[29]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[30]), color='red',  linetype="dashed", size=shipnights$ships[30]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[31]), color='red',  linetype="dashed", size=shipnights$ships[31]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[32]), color='red',  linetype="dashed", size=shipnights$ships[32]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[33]), color='red',  linetype="dashed", size=shipnights$ships[33]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[34]), color='red',  linetype="dashed", size=shipnights$ships[34]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[35]), color='red',  linetype="dashed", size=shipnights$ships[35]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[36]), color='red',  linetype="dashed", size=shipnights$ships[36]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[37]), color='red',  linetype="dashed", size=shipnights$ships[37]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[38]), color='red',  linetype="dashed", size=shipnights$ships[38]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[39]), color='red',  linetype="dashed", size=shipnights$ships[39]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[40]), color='red',  linetype="dashed", size=shipnights$ships[40]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[41]), color='red',  linetype="dashed", size=shipnights$ships[41]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[42]), color='red',  linetype="dashed", size=shipnights$ships[42]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[43]), color='red',  linetype="dashed", size=shipnights$ships[43]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[44]), color='red',  linetype="dashed", size=shipnights$ships[44]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[45]), color='red',  linetype="dashed", size=shipnights$ships[45]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[46]), color='red',  linetype="dashed", size=shipnights$ships[46]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[47]), color='red',  linetype="dashed", size=shipnights$ships[47]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[48]), color='red',  linetype="dashed", size=shipnights$ships[48]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[49]), color='red',  linetype="dashed", size=shipnights$ships[49]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[50]), color='red',  linetype="dashed", size=shipnights$ships[50]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[51]), color='red',  linetype="dashed", size=shipnights$ships[51]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[52]), color='red',  linetype="dashed", size=shipnights$ships[52]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[53]), color='red',  linetype="dashed", size=shipnights$ships[53]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[54]), color='red',  linetype="dashed", size=shipnights$ships[54]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[55]), color='red',  linetype="dashed", size=shipnights$ships[55]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[56]), color='red',  linetype="dashed", size=shipnights$ships[56]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[57]), color='red',  linetype="dashed", size=shipnights$ships[57]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[58]), color='gray66',  linetype="dotdash", size=shipnights$ships[58]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[59]), color='gray66',  linetype="dotdash", size=shipnights$ships[59]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[60]), color='red',  linetype="dashed", size=shipnights$ships[60]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[61]), color='red',  linetype="dashed", size=shipnights$ships[61]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[62]), color='red',  linetype="dashed", size=shipnights$ships[62]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[63]), color='gray66',  linetype="dotdash", size=shipnights$ships[63]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[64]), color='red',  linetype="dashed", size=shipnights$ships[64]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[65]), color='red',  linetype="dashed", size=shipnights$ships[65]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[66]), color='red',  linetype="dashed", size=shipnights$ships[66]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[67]), color='red',  linetype="dashed", size=shipnights$ships[67]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[68]), color='red',  linetype="dashed", size=shipnights$ships[68]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[69]), color='red',  linetype="dashed", size=shipnights$ships[69]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[70]), color='red',  linetype="dashed", size=shipnights$ships[70]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[71]), color='red',  linetype="dashed", size=shipnights$ships[71]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[72]), color='red',  linetype="dashed", size=shipnights$ships[72]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[73]), color='red',  linetype="dashed", size=shipnights$ships[73]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[74]), color='red',  linetype="dashed", size=shipnights$ships[74]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[75]), color='red',  linetype="dashed", size=shipnights$ships[75]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[76]), color='red',  linetype="dashed", size=shipnights$ships[76]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[77]), color='red',  linetype="dashed", size=shipnights$ships[77]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[78]), color='gray66',  linetype="dotdash", size=shipnights$ships[78]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[79]), color='red',  linetype="dashed", size=shipnights$ships[79]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[80]), color='red',  linetype="dashed", size=shipnights$ships[80]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[81]), color='gray66',  linetype="dotdash", size=shipnights$ships[81]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[82]), color='gray66',  linetype="dotdash", size=shipnights$ships[82]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[83]), color='gray66',  linetype="dotdash", size=shipnights$ships[83]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[84]), color='red',  linetype="dashed", size=shipnights$ships[84]/50) +
+  geom_vline(aes(xintercept=shipnights$NightStarting[85]), color='red',  linetype="dashed", size=shipnights$ships[85]/50) +
+  xlab("Date")+
+  scale_y_continuous(bquote('Cliff face brightness '~(cd/m^2)), 
+                     sec.axis=sec_axis(~ (. - a)/b, name="Prop. of tagged shearwaters entering colony", breaks=seq(0,60,10), labels=as.character(seq(0,60,10))))+
+  theme(panel.background=element_rect(fill="white", colour="black"), 
+        text=element_text(family="sans"),
+        axis.text.x = element_text(size=18, color="black", family="sans"),
+        axis.text.y = element_text(size=14, color="black", family="sans"),
+        axis.title=element_text(size=22, family="sans"), 
+        strip.text.x=element_text(size=18, color="black", family="sans"), 
+        strip.background=element_rect(fill="white", colour="black"),
+        axis.title.y=element_text(margin=margin(0,10,0,0)),
+        axis.title.y.right=element_text(margin=margin(0,0,0,10)),
+        axis.title.x=element_text(margin=margin(10,0,0,0)),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank())
+
+#############################################################################################################   
+###############Make figure of arrival and departure times from the colony, including moon effect ############
+#############################################################################################################
+
+#since night length varies across the study period, present time of entrance/exit from colony as hours after sunset
+
+library(lunar)
+
+MIOdet <- MIOperall %>%
+  filter(firstmove==1 | lastmove ==1) %>%
+  filter(error!=1)%>%
+  mutate(NightEnding=NightStarting+days(1))%>%
+  mutate(sunset=sunriset(locs[1,], as.POSIXct(NightStarting, tz="UTC"),direction=c("sunset"), POSIXct.out=T)[,2])%>%
+  mutate(sunrise=sunriset(locs[1,], as.POSIXct(NightEnding, tz="UTC"),direction=c("sunrise"), POSIXct.out=T)[,2])%>%
+  #mutate(prop.illuminated=moonAngle(t=DateTime, longitude=coordinates(locs)[2,1], latitude=coordinates(locs)[2,2])$illuminatedFraction)%>%### This is how 'full the moon is - 1 is full moon, 0 is new moon
+  #m#utate(moon.elevation=moonAngle(t=DateTime, longitude=coordinates(locs)[2,1], latitude=coordinates(locs)[2,2])$altitude) %>%
+  #mutate(moon.light=prop.illuminated*(moon.elevation/coordinates(locs)[2,2])) %>%
+  mutate(moonphase=lunar.phase(NightStarting, shift=12, name = TRUE)) %>%
+  mutate(aftersunsetIN=difftime(firstmovetime, sunset, units=("hours"))) %>%
+  mutate(aftersunsetOUT=difftime(lastmovetime, sunset, units=("hours"))) %>%
+  mutate(IN = ifelse(firstmove==1 & direction=="IN", 1, 0)) %>%
+  mutate(OUT = ifelse(lastmove==1 & direction=="OUT", 1, 0)) 
+
+MIOdet$aftersunsetIN <- as.numeric(MIOdet$aftersunsetIN)
+MIOdet$aftersunsetOUT <- as.numeric(MIOdet$aftersunsetOUT)
+
+hist(MIOdet$aftersunsetOUT[MIOdet$OUT==1])
+
+MIOdetIN <- MIOdet %>% filter(IN==1)
+MIOdetOUT <- MIOdet %>% filter(OUT==1)
+
+  ggplot()+
+  geom_histogram(data=MIOdetIN, aes(aftersunsetIN), binwidth=0.5, fill="darkblue", alpha=0.8)+
+  geom_histogram(data=MIOdetOUT, aes(aftersunsetOUT), binwidth=0.5, fill="lightgreen",alpha=0.5)+
+  facet_grid('moonphase', scales="fixed")+
+  ylab("Frequency") +  
+  xlab("Hours after sunset") +
+  scale_x_continuous(breaks=seq(0,13,1), labels=seq(0,13,1))+
+  theme(panel.background=element_rect(fill="white", colour="black"), 
+        axis.text.x=element_text(size=18, color="black", family="sans"),
+        axis.text.y=element_text(size=14, color="black", family="sans"),
+        axis.title=element_text(size=22, family="sans"),
+        axis.title.y=element_text(margin=margin(0,15,0,0)),
+        axis.title.x=element_text(margin=margin(15,0,0,0)), 
+        strip.text.x=element_text(size=18, color="black", family="sans"),
+        strip.text.y=element_text(size=18, color="black", family="sans"),
+        strip.background=element_rect(fill="white", colour="black"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank())
 #######################################################################################################################################
 ###Save workspace for replication and upload to github ###############
 #######################################################################################################################################   
